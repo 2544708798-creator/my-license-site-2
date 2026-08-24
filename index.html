@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>软件正版授权激活中心</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f3f4f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); width: 100%; max-width: 400px; text-align: center; }
+        h2 { margin-top: 0; color: #111827; font-size: 20px; }
+        p { color: #6b7280; font-size: 14px; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 15px; box-sizing: border-box; outline: none; margin-bottom: 15px; text-align: center; font-family: monospace; }
+        input:focus { border-color: #2563eb; }
+        button { width: 100%; padding: 12px; background-color: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #1d4ed8; }
+        .result { margin-top: 20px; padding: 15px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; display: none; }
+        .key { font-size: 22px; font-weight: bold; color: #047857; font-family: monospace; letter-spacing: 1px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>⚡ 软件正版授权自助激活</h2>
+        <p>请粘贴打开软件时获取到的 16 位机器码</p>
+        <input type="text" id="machineCode" placeholder="例如：B5E28F9011C3A87F" maxlength="32">
+        <button onclick="fetchKey()">获取我的激活码</button>
+
+        <div class="result" id="resultArea">
+            <div style="font-size: 12px; color: #065f46;">您的专属激活码：</div>
+            <div class="key" id="licenseKey">---</div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchKey() {
+            const code = document.getElementById('machineCode').value.trim();
+            if (!code) {
+                alert('请先输入机器码！');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ machine_code: code })
+                });
+                const data = await response.json();
+
+                if (data.license_key) {
+                    document.getElementById('licenseKey').innerText = data.license_key;
+                    document.getElementById('resultArea').style.display = 'block';
+                } else {
+                    alert('生成失败：' + (data.error || '无效的机器码'));
+                }
+            } catch (err) {
+                alert('网络错误，请稍后再试！');
+            }
+        }
+    </script>
+</body>
+</html>
