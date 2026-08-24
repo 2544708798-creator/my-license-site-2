@@ -7,10 +7,30 @@ import urllib.request
 # 1. 软件秘钥（必须与你的 EXE 本地软件保持完全一致！）
 APP_SECRET_KEY = "MyAwesomeApp2026Key"
 
-# 2. Upstash 数据库参数（替换为你自己的真实地址和 Token）
-UPSTASH_URL="https://charming-lynx-124694.upstash.io"  # ⚠️ 检查这里：必须有引号，且变量名为全大写
-UPSTASH_TOKEN="gQAAAAAAAecWAAIgcDIyMDg5ZTNhYjBmOGY0NjcyOTM3ZmI4OTQzMWY1ZmQwMg"  # ⚠️ 检查这里：你的 Upstash REST Token
+# 2. 卡密暗号秘钥（自定义一串英文，必须与本地生成卡密的 Python 脚本保持一致！）
+CARD_SECRET_KEY = "MyCardSecret2026"
+
+# 3. Upstash 数据库参数（替换为你自己的真实地址和 Token）
+UPSTASH_URL = "https://charming-lynx-124694.upstash.io"
+UPSTASH_TOKEN = "gQAAAAAAAecWAAIgcDIyMDg5ZTNhYjBmOGY0NjcyOTM3ZmI4OTQzMWY1ZmQwMg"  # 替换为你的真实 Token
 # ==================================================
+
+
+def is_valid_card_format(card_id):
+    """【暗号防伪】校验卡密是否由官方算法生成"""
+    # 格式必须刚好为 16 位字母数字
+    if len(card_id) != 16 or not card_id.isalnum():
+        return False
+
+    prefix = card_id[:12]  # 前 12 位为随机码
+    tail = card_id[12:]  # 后 4 位为暗号校验尾号
+
+    # 用前 12 位 + 暗号秘钥 计算官方尾号
+    expected_tail = (
+        hashlib.md5(f"{prefix}-{CARD_SECRET_KEY}".encode()).hexdigest()[:4].upper()
+    )
+
+    return tail == expected_tail
 
 
 def verify_and_bind_card(card_id, machine_code):
@@ -35,7 +55,7 @@ def verify_and_bind_card(card_id, machine_code):
                     "卡密已被其他电脑激活使用，无法重复激活！",
                 )
 
-        # 情况 2：卡密第一次激活 -> 写入数据库锁定绑定此机器码
+        # 情况 2：合法卡密首次激活 -> 写入数据库锁定绑定此机器码
         set_url = f"{UPSTASH_URL}/set/{card_id}/{machine_code}"
         set_req = urllib.request.Request(
             set_url, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
@@ -66,22 +86,23 @@ class handler(BaseHTTPRequestHandler):
                 )
                 return
 
-            if len(card_id) != 16 or not card_id.isalnum():
+            # 【防伪第一关】校验暗号，非官方计算生成的卡密直接弹回！
+            if not is_valid_card_format(card_id):
                 self._send_response(
                     400,
                     {
-                        "error": "卡密格式不正确！请输入正确的 16 位正版卡密。"
+                        "error": "无效的卡密！请输入正确的正版授权卡密。"
                     },
                 )
                 return
 
-            # 查询并核销卡密
+            # 【绑定第二关】查询并核销卡密
             valid, msg = verify_and_bind_card(card_id, machine_code)
             if not valid:
                 self._send_response(400, {"error": msg})
                 return
 
-            # 算出 16 位专属激活码
+            # 算出 16 位专属激活码（由机器码 + 私钥加密生成）
             license_key = (
                 hashlib.md5(f"{machine_code}-{APP_SECRET_KEY}".encode())
                 .hexdigest()[:16]
