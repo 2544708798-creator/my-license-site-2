@@ -7,9 +7,9 @@ import urllib.request
 # 1. 软件秘钥（必须与你的 EXE 本地软件保持完全一致！）
 APP_SECRET_KEY = "MyAwesomeApp2026Key"
 
-# 2. Upstash 数据库参数（替换为你自己的字符串）
-UPSTASH_REDIS_REST_URL="https://charming-lynx-124694.upstash.io"  # 替换为你的 REST URL
-UPSTASH_REDIS_REST_TOKEN="********"  # 替换为你的 REST TOKEN
+# 2. Upstash 数据库参数（替换为你自己的真实地址和 Token）
+UPSTASH_REDIS_REST_URL="https://charming-lynx-124694.upstash.io"  # ⚠️ 检查这里：必须有引号，且变量名为全大写
+UPSTASH_REDIS_REST_TOKEN="********"  # ⚠️ 检查这里：你的 Upstash REST Token
 # ==================================================
 
 
@@ -66,7 +66,6 @@ class handler(BaseHTTPRequestHandler):
                 )
                 return
 
-            # 【防瞎猜与盲猜核心】卡密必须刚好为 16 位，且只能是字母和数字组成
             if len(card_id) != 16 or not card_id.isalnum():
                 self._send_response(
                     400,
@@ -82,7 +81,7 @@ class handler(BaseHTTPRequestHandler):
                 self._send_response(400, {"error": msg})
                 return
 
-            # 算出 16 位专属激活码（由机器码 + 私钥加密生成）
+            # 算出 16 位专属激活码
             license_key = (
                 hashlib.md5(f"{machine_code}-{APP_SECRET_KEY}".encode())
                 .hexdigest()[:16]
