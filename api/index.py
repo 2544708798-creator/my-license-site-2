@@ -3,12 +3,14 @@ import json
 from http.server import BaseHTTPRequestHandler
 import urllib.request
 
-# 1. 软件密钥（与你 Python 软件里的密钥保持一致）
+# ==================== 核心配置 ====================
+# 1. 软件秘钥（必须与你的 EXE 本地软件保持完全一致！）
 APP_SECRET_KEY = "MyAwesomeApp2026Key"
 
-# 2. 填入你在 Upstash 获得的 REST URL 和 TOKEN
-UPSTASH_REDIS_REST_URL="https://charming-lynx-124694.upstash.io"  # 替换为你的 REST URL
-UPSTASH_REDIS_REST_TOKEN="********"  # 替换为你的 REST TOKEN
+# 2. Upstash 数据库参数（替换为你自己的字符串）
+UPSTASH_URL = "https://xxxxx.upstash.io"  # 替换为你的 REST URL
+UPSTASH_TOKEN = "AXxxxxxx..."  # 替换为你的 REST TOKEN
+# ==================================================
 
 
 def verify_and_bind_card(card_id, machine_code):
@@ -23,7 +25,7 @@ def verify_and_bind_card(card_id, machine_code):
             res_data = json.loads(response.read().decode("utf-8"))
             status = res_data.get("result")
 
-        # 情况 1：卡密已被使用
+        # 情况 1：卡密已被使用过
         if status:
             if status == machine_code:
                 return True, "已绑定此电脑"
@@ -33,7 +35,7 @@ def verify_and_bind_card(card_id, machine_code):
                     "卡密已被其他电脑激活使用，无法重复激活！",
                 )
 
-        # 情况 2：卡密首次激活 -> 写入数据库绑定机器码
+        # 情况 2：卡密第一次激活 -> 写入数据库锁定绑定此机器码
         set_url = f"{UPSTASH_URL}/set/{card_id}/{machine_code}"
         set_req = urllib.request.Request(
             set_url, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
@@ -50,7 +52,7 @@ def verify_and_bind_card(card_id, machine_code):
 class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
-        content_length = int(self.headers["Content-Length"])
+        content_length = int(self.headers.get("Content-Length", 0))
         post_data = self.rfile.read(content_length)
 
         try:
@@ -64,18 +66,23 @@ class handler(BaseHTTPRequestHandler):
                 )
                 return
 
-            if len(card_id) < 6:
+            # 【防瞎猜与盲猜核心】卡密必须刚好为 16 位，且只能是字母和数字组成
+            if len(card_id) != 16 or not card_id.isalnum():
                 self._send_response(
-                    400, {"error": "卡密格式不正确，请检查！"}
+                    400,
+                    {
+                        "error": "卡密格式不正确！请输入正确的 16 位正版卡密。"
+                    },
                 )
                 return
 
+            # 查询并核销卡密
             valid, msg = verify_and_bind_card(card_id, machine_code)
             if not valid:
                 self._send_response(400, {"error": msg})
                 return
 
-            # 计算生成 16 位激活码
+            # 算出 16 位专属激活码（由机器码 + 私钥加密生成）
             license_key = (
                 hashlib.md5(f"{machine_code}-{APP_SECRET_KEY}".encode())
                 .hexdigest()[:16]
