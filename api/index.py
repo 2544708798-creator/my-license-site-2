@@ -9,7 +9,7 @@ APP_SECRET_KEY = "MyAwesomeApp2026Key"
 
 # 2. Upstash 数据库参数（替换为你自己的真实地址和 Token）
 UPSTASH_URL="https://charming-lynx-124694.upstash.io"  # ⚠️ 检查这里：必须有引号，且变量名为全大写
-UPSTASH_TOKEN="********"  # ⚠️ 检查这里：你的 Upstash REST Token
+UPSTASH_TOKEN="gQAAAAAAAecWAAIgcDIyMDg5ZTNhYjBmOGY0NjcyOTM3ZmI4OTQzMWY1ZmQwMg"  # ⚠️ 检查这里：你的 Upstash REST Token
 # ==================================================
 
 
