@@ -8,8 +8,8 @@ import urllib.request
 APP_SECRET_KEY = "MyAwesomeApp2026Key"
 
 # 2. Upstash 数据库参数（替换为你自己的字符串）
-UPSTASH_URL = "https://xxxxx.upstash.io"  # 替换为你的 REST URL
-UPSTASH_TOKEN = "AXxxxxxx..."  # 替换为你的 REST TOKEN
+UPSTASH_REDIS_REST_URL="https://charming-lynx-124694.upstash.io"  # 替换为你的 REST URL
+UPSTASH_REDIS_REST_TOKEN="********"  # 替换为你的 REST TOKEN
 # ==================================================
 
 
